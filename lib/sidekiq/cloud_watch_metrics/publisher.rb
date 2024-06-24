@@ -23,11 +23,13 @@ module Sidekiq::CloudWatchMetrics
                    client: Aws::CloudWatch::Client.new,
                    namespace: "Sidekiq",
                    collector: nil,
+                   interval: INTERVAL,
                    **collector_kwargs)
       # Sidekiq 6.5+ requires @config, which defaults to the top-level
       # `Sidekiq` module, but can be overridden when running multiple Sidekiqs.
       @config = config
       @client = client
+      @interval = interval || INTERVAL
       @namespace = namespace
 
       if collector_kwargs.size > 0
@@ -55,7 +57,7 @@ module Sidekiq::CloudWatchMetrics
     def run
       logger.info { "Started Sidekiq CloudWatch Metrics Publisher" }
 
-      # Publish stats every INTERVAL seconds, sleeping as required between runs
+      # Publish stats every @interval seconds, sleeping as required between runs
       now = Time.now.to_f
       tick = now
       until @stop
@@ -63,7 +65,7 @@ module Sidekiq::CloudWatchMetrics
         publish
 
         now = Time.now.to_f
-        tick = [tick + INTERVAL, now].max
+        tick = [tick + @interval, now].max
         sleep(tick - now) if tick > now
       end
 

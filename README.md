@@ -67,6 +67,12 @@ end
 Sidekiq::CloudWatchMetrics.enable!(collector: CustomCollector.new)
 ```
 
+Publishing interval by default is 60 seconds. You can adjust this as follows:
+
+```ruby
+Sidekiq::CloudWatchMetrics.enable!(client: Aws::CloudWatch::Client.new, interval: 30)
+```
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
@@ -80,4 +86,3 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/sj26/s
 ## License
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
