@@ -92,7 +92,7 @@ module Sidekiq::CloudWatchMetrics
       processes.group_by do |process|
         process["tag"]
       end.each do |(tag, tag_processes)|
-        next if tag.nil?
+        next if tag.nil? || tag.empty?
 
         tag_utilization = calculate_utilization(tag_processes) * 100.0
 
@@ -114,8 +114,10 @@ module Sidekiq::CloudWatchMetrics
           unless process_utilization.nan?
             process_dimensions = [{name: "Hostname", value: process["hostname"]}]
 
-            if process["tag"]
-              process_dimensions << {name: "Tag", value: process["tag"]}
+            tag = process["tag"]
+
+            unless tag.nil? || tag.empty?
+              process_dimensions << {name: "Tag", value: tag}
             end
 
             metrics << {

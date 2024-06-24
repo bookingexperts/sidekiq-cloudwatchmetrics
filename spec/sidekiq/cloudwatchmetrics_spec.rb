@@ -253,10 +253,12 @@ RSpec.describe Sidekiq::CloudWatchMetrics do
           [
             Sidekiq::Process.new("busy" => 5, "concurrency" => 10, "hostname" => "foo", "tag" => "default"),
             Sidekiq::Process.new("busy" => 2, "concurrency" => 20, "hostname" => "bar", "tag" => "shard-one"),
+            Sidekiq::Process.new("busy" => 1, "concurrency" => 1, "hostname" => "bar", "tag" => ""),
+            Sidekiq::Process.new("busy" => 0, "concurrency" => 1, "hostname" => "bar"),
           ]
         end
 
-        it "publishes metrics including tag as a dimension" do
+        it "publishes metrics including tag as a dimension, skipping processes with empty or unset tags" do
           Timecop.freeze(now = Time.now) do
             publisher.publish
 
@@ -266,7 +268,7 @@ RSpec.describe Sidekiq::CloudWatchMetrics do
                 {
                   metric_name: "Utilization",
                   timestamp: now,
-                  value: 30.0,
+                  value: 40.0,
                   unit: "Percent",
                 },
                 {
