@@ -162,7 +162,7 @@ module Sidekiq::CloudWatchMetrics
         end
       end
 
-      metrics = yield(metrics:, timestamp:) if block_given?
+      metrics = yield(metrics:, timestamp: now) if block_given?
 
       unless @additional_dimensions.empty?
         metrics = metrics.each do |metric|

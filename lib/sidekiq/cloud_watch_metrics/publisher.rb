@@ -19,14 +19,12 @@ module Sidekiq::CloudWatchMetrics
 
     INTERVAL = 60 # seconds
 
-    def initialize(config: Sidekiq,
+    def initialize(config: Sidekiq.default_configuration,
                    client: Aws::CloudWatch::Client.new,
                    namespace: "Sidekiq",
                    collector: nil,
                    interval: INTERVAL,
                    **collector_kwargs)
-      # Sidekiq 6.5+ requires @config, which defaults to the top-level
-      # `Sidekiq` module, but can be overridden when running multiple Sidekiqs.
       @config = config
       @client = client
       @interval = interval || INTERVAL
