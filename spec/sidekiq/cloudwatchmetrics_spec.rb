@@ -446,6 +446,65 @@ RSpec.describe Sidekiq::CloudWatchMetrics do
         end
       end
 
+      context "when default metrics are disabled" do
+        let(:collector) { Sidekiq::CloudWatchMetrics::Collector.new(default_metrics: false) }
+
+        subject(:publisher) { Sidekiq::CloudWatchMetrics::Publisher.new(client: client, collector: collector) }
+
+        it "doesn't publish any default metrics" do
+          Timecop.freeze(now = Time.now) do
+            publisher.publish
+
+            expect(client).to have_received(:put_metric_data) do |metrics|
+              %w[
+                ProcessedJobs
+                FailedJobs
+                EnqueuedJobs
+                ScheduledJobs
+                RetryJobs
+                DeadJobs
+                Workers
+                Processes
+                DefaultQueueLatency
+                Capacity
+              ].each do |metric_name|
+                expect(metrics[:metric_data].detect { |data| data[:metric_name] == metric_name }).to be_nil
+              end
+            end
+          end
+        end
+      end
+
+      context "when utilization metrics are disabled" do
+        let(:processes) { [
+          Sidekiq::Process.new("busy" => 2, "concurrency" => 4, "hostname" => "bar"),
+        ] }
+
+        let(:collector) { Sidekiq::CloudWatchMetrics::Collector.new(utilization_metrics: false) }
+
+        subject(:publisher) { Sidekiq::CloudWatchMetrics::Publisher.new(client: client, collector: collector) }
+
+        it "only publishes a single Utilization metric" do
+          Timecop.freeze(now = Time.now) do
+            publisher.publish
+
+            expect(client).to have_received(:put_metric_data) { |metrics|
+              utilization_data = metrics[:metric_data].select { |data| data[:metric_name] == "Utilization" }
+
+              expect(utilization_data).to contain_exactly(
+                {
+                  metric_name: "Utilization",
+                  timestamp: now,
+                  value: 50.0,
+                  unit: "Percent",
+                  dimensions: [{name: "Hostname", value: "bar"}],
+                },
+              )
+            }
+          end
+        end
+      end
+
       context "when per process metrics are disabled" do
         let(:collector) { Sidekiq::CloudWatchMetrics::Collector.new(process_metrics: false) }
 
@@ -467,6 +526,24 @@ RSpec.describe Sidekiq::CloudWatchMetrics do
                 },
               )
             }
+          end
+        end
+      end
+
+      context "when queue metrics are disabled" do
+        let(:collector) { Sidekiq::CloudWatchMetrics::Collector.new(queue_metrics: false) }
+
+        subject(:publisher) { Sidekiq::CloudWatchMetrics::Publisher.new(client: client, collector: collector) }
+
+        it "doesn't publish any queue metrics" do
+          Timecop.freeze(now = Time.now) do
+            publisher.publish
+
+            expect(client).to have_received(:put_metric_data) do |metrics|
+              %w[QueueSize QueueLatency].each do |metric_name|
+                expect(metrics[:metric_data].detect { |data| data[:metric_name] == metric_name }).to be_nil
+              end
+            end
           end
         end
       end
